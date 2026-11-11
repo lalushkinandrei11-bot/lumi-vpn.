@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lumi VPN — Свободный доступ к миру</title>
+  <script>
+    window.addEventListener('error', function(e) { e.preventDefault(); return true; }, true);
+    window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); return true; }, true);
+  </script>
+  <style>
+    :root {
+      --bg: #000000;
+      --card: rgba(12, 12, 15, 0.85);
+      --card-in: rgba(5, 5, 8, 0.95);
+      --line: rgba(255, 255, 255, 0.1);
+      --line-hi: rgba(255, 255, 255, 0.35);
+      --txt: #ffffff;
+      --muted: #a1a1aa;
+      --dim: #71717a;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --grad: linear-gradient(92deg, #7c3aed 0%, #c026d3 52%, #ec4899 100%);
+      --green: #10b981;
+      --red: #ef4444;
+      --cl-green: #00c48c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--bg); color: var(--txt); overflow-x: hidden; padding-bottom: 110px; line-height: 1.5;
+    }
+
+    .topography-hero-stage {
+      width: 100%;
+      height: 600px;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 0%, rgba(30, 30, 35, 0.5) 0%, #000000 80%);
+      border-bottom: 1px solid var(--line);
+    }
+    canvas#topographyCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+      cursor: crosshair;
+    }
+    .hero-overlay-content {
+      position: relative;
+      z-index: 2;
+      max-width: 480px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 26px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .hero-overlay-content button,
+    .hero-overlay-content .route-pill,
+    .hero-overlay-content .city-strip {
+      pointer-events: auto;
+    }
+
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 2; }
+
+    .toast {
+      position: fixed; top: 18px; left: 50%; transform: translate(-50%, -90px);
+      background: var(--green); color: #fff; padding: 11px 22px; border-radius: 99px;
+      font-weight: 700; font-size: 0.86rem; z-index: 300; box-shadow: 0 10px 28px rgba(16,185,129,0.45);
+      transition: transform 0.28s ease; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { transform: translate(-50%, 0); }
+
+    header {
+      position: sticky; top: 0; z-index: 50; background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(18px); border-bottom: 1px solid var(--line);
+    }
+    .nav { max-width: 480px; margin: 0 auto; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 1.2rem; cursor: pointer; text-decoration: none; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #6d28d9 0%, #db2777 62%, #f59e0b 100%);
+      display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(219,39,119,0.4);
+    }
+    .logo-mark svg { width: 20px; height: 20px; fill: #fff; }
+    .nav-r { display: flex; align-items: center; gap: 10px; }
+    .sup-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 99px;
+      border: 1px solid var(--line); background: rgba(255,255,255,0.05); color: #ffffff;
+      text-decoration: none; font-size: 0.8rem; font-weight: 600;
+    }
+    .menu-ico { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+    .menu-ico i { display: block; width: 18px; height: 1.8px; background: #ffffff; border-radius: 2px; }
+
+    .hero-top { text-align: center; }
+    .hero-top h1 { font-size: 2.45rem; font-weight: 900; line-height: 1.08; letter-spacing: -0.9px; margin-bottom: 14px; color: #ffffff; text-shadow: 0 4px 20px rgba(0,0,0,0.9); }
+    .grad-txt { color: #ffffff; text-shadow: 0 0 20px rgba(255,255,255,0.3); }
+    .hero-p { color: #e4e4e7; font-size: 0.98rem; line-height: 1.5; margin-bottom: 22px; padding: 0 6px; text-shadow: 0 2px 10px rgba(0,0,0,0.9); }
+
+    .btn {
+      width: 100%; padding: 15px 22px; border-radius: 99px; border: none; font-size: 0.98rem; font-weight: 700;
+      color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: transform 0.15s ease; text-decoration: none;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-main { background: var(--grad); box-shadow: 0 8px 26px rgba(192,38,211,0.42); margin-bottom: 10px; }
+    .btn-sec { background: rgba(10, 10, 12, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.18); margin-bottom: 14px; color: #ffffff; }
+    .perks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 0.82rem; color: #ffffff; font-weight: 600; }
+
+    .fl { display: inline-block; width: 18px; height: 13px; border-radius: 2.5px; vertical-align: middle; flex-shrink: 0; }
+    .fl-nl { background: linear-gradient(#ae1c28 33%, #fff 33%, #fff 66%, #21468b 66%); }
+    .fl-at { background: linear-gradient(#ed2939 33%, #fff 33%, #fff 66%, #ed2939 66%); }
+    .fl-de { background: linear-gradient(#111 33%, #dd0000 33%, #dd0000 66%, #ffce00 66%); }
+    .fl-se { background: linear-gradient(90deg, #006aa7 35%, #fecc02 35%, #fecc02 50%, #006aa7 50%); }
+
+    .route-pill {
+      width: 245px; background: rgba(10, 10, 15, 0.88); backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 11px 14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.7); margin-bottom: 10px; color: #ffffff;
+    }
+    .r-lbl { display: flex; align-items: center; gap: 6px; font-size: 0.66rem; letter-spacing: 1.2px; color: #a1a1aa; text-transform: uppercase; margin-bottom: 4px; font-family: monospace; }
+    .dot-g { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); display: inline-block; }
+    .r-city { font-size: 1.02rem; font-weight: 800; display: flex; align-items: center; gap: 7px; margin-bottom: 2px; color: #ffffff; }
+    .r-crd { font-family: monospace; font-size: 0.7rem; color: #ffffff; font-weight: 700; }
+
+    .city-strip {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+      padding: 6px 8px; font-size: 0.8rem; color: #ffffff; gap: 4px;
+    }
+    .c-item { cursor: pointer; padding: 5px 8px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: #e4e4e7; font-weight: 600; }
+    .c-item.active { background: rgba(255,255,255,0.15); color: #fff; font-weight: 800; }
+
+    /* Блок выданной подписки + Инструкция Incy */
+    .sub-success-wrap {
+      display: none;
+      background: #050b14;
+      border: 2px solid #10b981;
+      border-radius: 24px; padding: 22px 18px; margin: 22px 0 30px;
+      box-shadow: 0 18px 45px rgba(16,185,129,0.22);
+    }
+    .sub-badge {
+      display: inline-block;
+      background: rgba(16,185,129,0.22); color: #6ee7b7; font-size: 0.74rem;
+      font-weight: 800; padding: 4px 11px; border-radius: 99px; margin-bottom: 10px; text-transform: uppercase;
+    }
+    .key-input-box {
+      width: 100%; background: #000000; border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 13px; padding: 12px; font-family: monospace; font-size: 0.78rem;
+      color: #ffffff; font-weight: 700; margin: 10px 0 12px; outline: none;
+    }
+    .key-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+    .k-btn { padding: 12px; border-radius: 12px; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--line); background: rgba(255,255,255,0.08); color: #ffffff; cursor: pointer; }
+    .k-btn.pri { background: var(--grad); border: none; }
+
+    .incy-guide {
+      background: #000000; border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 18px; padding: 16px;
+    }
+    .incy-guide-title { font-size: 1rem; font-weight: 800; margin-bottom: 12px; color: #ffffff; }
+    .incy-step { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 11px; font-size: 0.84rem; color: #ffffff; font-weight: 600; }
+    .incy-step:last-child { margin-bottom: 0; }
+    .incy-num {
+      width: 24px; height: 24px; border-radius: 50%; background: #9333ea;
+      color: #fff; font-weight: 800; font-size: 0.75rem; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+
+    .bento { background: var(--card); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; margin: 26px 0 42px; }
+    .b-row { padding: 22px 20px; border-bottom: 1px solid var(--line); }
+    .b-num { font-size: 2.35rem; font-weight: 900; line-height: 1.06; margin-bottom: 5px; color: #ffffff; }
+    .b-num small { font-size: 1.1rem; color: #ffffff; font-weight: 700; }
+    .b-txt { color: #ffffff; font-size: 0.9rem; font-weight: 600; }
+    .b-split { display: grid; grid-template-columns: 1fr 1fr; }
+    .b-cell { padding: 20px 16px; }
+    .b-cell:first-child { border-right: 1px solid var(--line); }
+
+    .s-tag { display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 0.78rem; letter-spacing: 1.8px; color: #ffffff; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+    .s-tag i { width: 24px; height: 1.5px; background: #ffffff; display: inline-block; }
+    .s-h2 { font-size: 1.92rem; font-weight: 900; line-height: 1.12; margin-bottom: 10px; color: #ffffff; }
+    .s-h2 span { color: #a1a1aa; display: block; }
+    .s-sub { color: #ffffff; font-size: 0.92rem; font-weight: 500; line-height: 1.5; margin-bottom: 22px; }
+
+    .f-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px 18px; margin-bottom: 12px; }
+    .dev-window { height: 145px; overflow: hidden; position: relative; background: var(--card-in); border: 1px solid var(--line); border-radius: 14px; padding: 0 12px; margin-bottom: 16px; }
+    .dev-track { animation: scrollDevs 10s linear infinite; }
+    @keyframes scrollDevs { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+    .d-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 4px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem; font-weight: 700; color: #ffffff; }
+    .d-on { color: var(--green); font-size: 0.76rem; display: flex; align-items: center; gap: 5px; font-weight: 700; }
+    .f-card h3 { font-size: 1.14rem; font-weight: 800; margin-bottom: 5px; color: #ffffff; }
+    .f-card p { color: #ffffff; font-size: 0.88rem; font-weight: 500; }
+
+    .tspu-box { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px 16px; margin-bottom: 42px; }
+    .t-bar { display: flex; align-items: center; gap: 13px; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 16px; cursor: pointer; }
+    .sw { width: 60px; height: 34px; border-radius: 99px; background: #27272a; position: relative; transition: background 0.25s; flex-shrink: 0; }
+    .sw.on { background: var(--grad); }
+    .sw-k { width: 26px; height: 26px; border-radius: 50%; background: #fff; position: absolute; top: 4px; left: 4px; transition: transform 0.25s ease; }
+    .sw.on .sw-k { transform: translateX(26px); }
+
+    .pkt-stage { position: relative; padding: 34px 0 12px; margin-bottom: 14px; }
+    .pkt-badge {
+      position: absolute; top: 0; left: 12%; transform: translateX(-50%);
+      padding: 4px 10px; border-radius: 99px; font-family: monospace; font-size: 0.72rem; font-weight: 700;
+      white-space: nowrap; z-index: 3; background: rgba(168,85,247,0.22); border: 1px solid rgba(168,85,247,0.55); color: #ffffff;
+    }
+    .pkt-badge.blocked {
+      background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.5); color: #ffffff;
+    }
+
+    .nodes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; position: relative; }
+    .nd { position: relative; z-index: 1; font-size: 0.72rem; color: #ffffff; font-weight: 700; }
+    .nd-c { width: 42px; height: 42px; margin: 0 auto 6px; border-radius: 50%; background: #000000; border: 1.5px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; color: #ffffff; }
+    .nd-c.lumi-nd { border-color: #ffffff; box-shadow: 0 0 16px rgba(255,255,255,0.4); }
+    .ins-box { background: var(--card-in); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; font-size: 0.8rem; }
+    .ins-h { color: #a1a1aa; font-size: 0.73rem; margin-bottom: 4px; font-weight: 600; }
+    .ins-st { font-weight: 800; margin-bottom: 8px; font-size: 0.82rem; color: #ffffff; }
+    .l-row { display: flex; justify-content: space-between; font-family: monospace; font-size: 0.74rem; padding: 3px 0; color: #ffffff; font-weight: 700; }
+
+    /* Калькулятор трафика */
+    .c-grp { margin-bottom: 18px; }
+    .c-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.86rem; font-weight: 800; color: #ffffff; }
+    .c-val { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; padding: 2px 9px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; }
+    input[type="range"] { width: 100%; accent-color: #ffffff; height: 5px; cursor: pointer; }
+    .q-switch { display: inline-flex; background: var(--card-in); border: 1px solid var(--line); border-radius: 9px; padding: 2px; margin-top: 8px; }
+    .q-opt { padding: 4px 11px; border-radius: 7px; font-size: 0.75rem; font-weight: 700; cursor: pointer; color: #ffffff; }
+    .q-opt.active { background: #ffffff; color: #000000; }
+    .p-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 6px; }
+    .p-opt { padding: 8px 0; text-align: center; border-radius: 9px; background: var(--card-in); border: 1px solid var(--line); color: #ffffff; font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+    .p-opt.active { background: #ffffff; border-color: #ffffff; color: #000000; }
+    .seg-bar { height: 10px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; display: flex; gap: 2px; margin: 10px 0 12px; }
+    .seg-v { background: #ffffff; height: 100%; transition: width 0.25s; }
+    .seg-s { background: #71717a; height: 100%; transition: width 0.25s; }
+
+    /* Тарифы с плавным пересчетом */
+    .p-tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 99px; padding: 4px; margin-bottom: 12px; }
+    .p-tab { padding: 9px 4px; text-align: center; font-size: 0.8rem; font-weight: 800; color: #a1a1aa; border-radius: 99px; cursor: pointer; }
+    .p-tab.active { background: #ffffff; color: #000000; border: 1px solid #ffffff; }
+
+    .calc-status-bar {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.78rem; color: #ffffff; font-weight: 700; height: 22px; margin-bottom: 10px;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .calc-status-bar.computing { opacity: 1; }
+    .spin-dot { width: 12px; height: 12px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .t-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 20px 18px;
+      margin-bottom: 14px; transition: border-color 0.22s ease, box-shadow 0.22s ease;
+    }
+    .t-card.feat { border: 1.5px solid rgba(255,255,255,0.4); background: #121217; }
+    .t-card.counting { border-color: #ffffff; box-shadow: 0 0 25px rgba(255,255,255,0.15); }
+    .t-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .t-pr { font-size: 1.75rem; font-weight: 900; text-align: right; line-height: 1.1; font-variant-numeric: tabular-nums; color: #ffffff; }
+    .t-pr.counting-num { color: #ffffff; }
+    .t-pr small { font-size: 0.8rem; color: #a1a1aa; font-weight: 700; }
+
+    .float-bar {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); max-width: 450px;
+      background: rgba(10, 10, 15, 0.94); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 99px; padding: 7px 7px 7px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 40;
+    }
+    .float-l { display: flex; align-items: center; gap: 9px; font-size: 0.78rem; font-weight: 700; line-height: 1.22; color: #ffffff; }
+    .float-btn { background: #ffffff; color: #000000; border: none; border-radius: 99px; padding: 10px 18px; font-weight: 900; font-size: 0.84rem; cursor: pointer; }
+
+    /* Модальная шторка */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 80; display: none; align-items: flex-end; justify-content: center; }
+    .overlay.open { display: flex; }
+    .sheet { width: 100%; max-width: 480px; background: #0c0c10; border-top: 1px solid rgba(255,255,255,0.2); border-radius: 26px 26px 0 0; padding: 12px 18px 26px; color: #ffffff; }
+    .handle { width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 99px; margin: 0 auto 14px; }
+    .sh-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .sh-x { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); border: none; color: #ffffff; font-size: 1rem; cursor: pointer; }
+    .plan-box { background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .pay-card { background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 16px; padding: 13px 15px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; color: #ffffff; }
+
+    /* Страница оплаты банковской картой */
+    .checkout-page { position: fixed; inset: 0; background: #ffffff; color: #111827; z-index: 150; display: none; overflow-y: auto; padding: 20px 16px 40px; }
+    .checkout-page.open { display: block; }
+    .chk-wrap { max-width: 420px; margin: 0 auto; }
+    .chk-back { background: none; border: none; color: #4b5563; font-size: 0.92rem; font-weight: 600; margin-bottom: 16px; cursor: pointer; }
+    .chk-box { background: #ffffff; border-radius: 22px; padding: 22px 18px; box-shadow: 0 12px 32px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
+    .chk-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 1px solid #f3f4f6; margin-bottom: 16px; }
+    .chk-sum { font-size: 1.75rem; font-weight: 900; color: #111827; }
+
+    .visual-card {
+      background: linear-gradient(135deg, #09090b 0%, #27272a 100%);
+      color: #fff; border-radius: 18px; padding: 18px; margin-bottom: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.15);
+    }
+    .vc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .vc-chip { width: 36px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+    .vc-brand { font-size: 0.82rem; font-weight: 800; background: rgba(255,255,255,0.2); padding: 3px 9px; border-radius: 6px; }
+    .vc-num { font-family: monospace; font-size: 1.15rem; letter-spacing: 2px; font-weight: 700; margin-bottom: 14px; }
+    .vc-bottom { display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.75); font-family: monospace; }
+
+    .f-group { margin-bottom: 14px; }
+    .f-group label { display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 6px; }
+    .f-input {
+      width: 100%; padding: 13px 14px; border: 2px solid #d1d5db; border-radius: 12px;
+      font-size: 1rem; font-weight: 600; color: #111827; outline: none; background: #f9fafb;
+    }
+    .f-input:focus { border-color: #000000; background: #fff; }
+    .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .pay-submit-btn {
+      width: 100%; background: #000000; color: #fff; border: none; border-radius: 14px;
+      padding: 16px; font-size: 1.08rem; font-weight: 800; cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); margin-top: 6px;
+    }
+    .err-msg { color: #ef4444; font-size: 0.8rem; font-weight: 600; margin-bottom: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast">Скопировано в буфер обмена</div>
+
+  <header>
+    <div class="nav">
+      <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 2L14.8 8.5L22 9.3L16.5 14L18.2 21L12 17.3L5.8 21L7.5 14L2 9.3L9.2 8.5L12 2Z"/></svg>
+        </div>
+        LumiVPN
+      </div>
+      <div class="nav-r">
+        <a href="https://t.me/lyaal11" target="_blank" class="sup-btn">Поддержка</a>
+        <button type="button" class="menu-ico" onclick="scrollToTariffs()">
+          <i></i><i></i><i></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Интерактивная 3D Топография (черно-белый стиль) -->
+  <div class="topography-hero-stage" id="topoStage">
+    <canvas id="topographyCanvas"></canvas>
+
+    <div class="hero-overlay-content">
+      <div class="hero-top">
+        <h1>Подключим<br>вас <span class="grad-txt">к миру</span></h1>
+        <p class="hero-p">Включили и забыли. Работает на всех устройствах через Incy, от 58 ₽ в месяц.</p>
+
+        <button type="button" class="btn btn-main" onclick="buyT('Plus','plus')">
+          Подключить Lumi VPN <span>→</span>
+        </button>
+        <button type="button" class="btn btn-sec" onclick="scrollToTariffs()">Смотреть тарифы</button>
+
+        <div class="perks">
+          <span>✓ ∞ устройств</span>
+          <span>✓ Поддержка Incy</span>
+          <span>✓ Без автопродления</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="route-pill">
+          <div class="r-lbl"><span class="dot-g"></span> МАРШРУТ</div>
+          <div class="r-city">
+            Вы <span style="color:#a1a1aa;">→</span>
+            <span class="fl fl-se" id="heroFl"></span>
+            <span id="heroCity">Швеция №5</span>
+          </div>
+          <div class="r-crd" id="heroCrd">59.32° N · 18.06° E · SE</div>
+        </div>
+
+        <div class="city-strip">
+          <div class="c-item active" onclick="setHeroLoc('fl-se','Швеция №5','59.32° N · 18.06° E · SE',this)"><span class="fl fl-se"></span> Швеция</div>
+          <span style="color:#334155;">✦</span>
+          <div class="c-item" onclick="setHeroLoc('fl-nl','Амстердам','52.37° N · 4.90° E · NL',this)"><span class="fl fl-nl"></span> Амстердам</div>
+          <span style="color:#334155;">✦</span>
+          <div class="c-item" onclick="setHeroLoc('fl-at','Вена','48.21° N · 16.37° E · AT',this)"><span class="fl fl-at"></span> Вена</div>
+          <span style="color:#334155;">✦</span>
+          <div class="c-item" onclick="setHeroLoc('fl-de','Франкфурт','50.11° N · 8.68° E · DE',this)"><span class="fl fl-de"></span> Франкфурт</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Блок выданной подписки + Инструкция Incy -->
+    <div class="sub-success-wrap" id="subSuccessBox">
+      <div class="sub-badge">✓ Оплата картой прошла · Подписка выдана</div>
+      <div style="font-weight:900; font-size:1.15rem; margin-bottom:4px; color: #ffffff;">Ваша подписка Lumi VPN активна!</div>
+      <p style="font-size:0.83rem; color:#a1a1aa;">Тариф: <b id="activePlanBadge" style="color:#fff;">Plus · 3 Месяца</b> · Локация: <b style="color:#34d399;">Швеция №5 LTE x8</b></p>
+
+      <input type="text" readonly class="key-input-box" id="vlessStr" value="" onclick="this.select()">
+
+      <div class="key-btns">
+        <button type="button" class="k-btn pri" onclick="copyVless()">Скопировать подписку</button>
+        <button type="button" class="k-btn" onclick="copyJson()">Скопировать JSON</button>
+      </div>
+
+      <div class="incy-guide">
+        <div class="incy-guide-title">📲 Инструкция: как подключить в Incy</div>
+        <div class="incy-step">
+          <div class="incy-num">1</div>
+          <div>Нажмите кнопку <b>«Скопировать подписку»</b> выше (ключ скопируется в буфер обмена).</div>
+        </div>
+        <div class="incy-step">
+          <div class="incy-num">2</div>
+          <div>Откройте приложение <b>Incy</b> на вашем телефоне или компьютере.</div>
+        </div>
+        <div class="incy-step">
+          <div class="incy-num">3</div>
+          <div>Нажмите <b>«+» (Добавить)</b> → выберите <b>«Импорт из буфера обмена»</b>, вставьте подписку и нажмите кнопку подключения.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Статистика -->
+    <section class="bento">
+      <div class="b-row">
+        <div class="b-num">100 000+</div>
+        <div class="b-txt">активных пользователей</div>
+      </div>
+      <div class="b-row">
+        <div class="b-num">10+ <small>ПБ</small></div>
+        <div class="b-txt">трафика через наши серверы в месяц — больше 10 млн ГБ</div>
+      </div>
+      <div class="b-split">
+        <div class="b-cell">
+          <div class="b-num">∞</div>
+          <div class="b-txt">устройств на одной подписке</div>
+        </div>
+        <div class="b-cell">
+          <div class="b-num">99.9<small>%</small></div>
+          <div class="b-txt">стабильная работа без сбоев</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 01 — ВОЗМОЖНОСТИ -->
+    <section>
+      <div class="s-tag"><span>01</span><i></i><span>ВОЗМОЖНОСТИ</span></div>
+      <h2 class="s-h2">Всё, что нужно от VPN. <span>Ничего лишнего.</span></h2>
+
+      <div class="f-card" style="margin-bottom:42px;">
+        <div class="dev-window">
+          <div class="dev-track">
+            <div class="d-item"><span>Windows</span><span class="d-on"><span class="dot-g"></span> Подключено</span></div>
+            <div class="d-item"><span>iPad</span><span class="d-on"><span class="dot-g"></span> Подключено</span></div>
+            <div class="d-item"><span>Android (Incy)</span><span class="d-on"><span class="dot-g"></span> Подключено</span></div>
+            <div class="d-item"><span>Linux</span><span class="d-on"><span class="dot-g"></span> Подключено</span></div>
+            <div class="d-item"><span>iPhone</span><span class="d-on"><span class="dot-g"></span> Подключено</span></div>
+          </div>
+        </div>
+        <h3>Безлимит устройств и прямая работа банков РФ</h3>
+        <p>Телефон, ПК и телевизор — на одной подписке в Incy. Сбербанк, Т-Банк, VK, Ozon и Госуслуги открываются напрямую без отключения VPN.</p>
+      </div>
+    </section>
+
+    <!-- 02 — МАРШРУТ И ТСПУ -->
+    <section>
+      <div class="s-tag"><span>02</span><i></i><span>МАРШРУТ</span></div>
+      <h2 class="s-h2">Что меняется, когда VPN включён</h2>
+      <p class="s-sub">Без VPN провайдер видит, куда вы ходите, а его фильтр — ТСПУ — решает, что откроется. С LumiVPN читать и блокировать нечего.</p>
+
+      <div class="tspu-box">
+        <div class="t-bar" onclick="toggleTspu()">
+          <div class="sw on" id="tSw"><div class="sw-k"></div></div>
+          <div>
+            <div style="font-size:0.72rem; color:#a1a1aa;">VPN</div>
+            <div style="font-size:1.1rem; font-weight:800; color: #ffffff;" id="tTitle">Включён</div>
+          </div>
+        </div>
+
+        <div class="pkt-stage">
+          <div class="pkt-badge" id="pktBadge">🔒 f24d·4ddb·1095·20</div>
+          <div class="nodes">
+            <div class="nd"><div class="nd-c">📱</div>Вы</div>
+            <div class="nd"><div class="nd-c">📡</div>Провайдер</div>
+            <div class="nd"><div class="nd-c lumi-nd">⚡</div>Lumi VPN</div>
+            <div class="nd"><div class="nd-c">🌐</div>Сайт</div>
+          </div>
+        </div>
+
+        <div class="ins-box">
+          <div class="ins-h">Провайдер и ТСПУ видят</div>
+          <div class="ins-st" id="ispSt" style="color:var(--green);">● Только шифр — блокировать нечего</div>
+          <div id="ispLogs">
+            <div class="l-row"><span>21:06</span><span>b81c-5d2f-9a70-3c</span></div>
+            <div class="l-row"><span>21:07</span><span>02e9-f6a4-d15b-88</span></div>
+          </div>
+        </div>
+
+        <div class="ins-box" style="margin-bottom:0;">
+          <div class="ins-h">Сайт видит</div>
+          <div class="ins-st" id="siteSt" style="color:var(--green);">● Адрес сервера Lumi, а не ваш</div>
+          <div class="l-row"><span>Откуда</span><span id="siteIp">198.51.100.7 · Швеция №5</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 — КАЛЬКУЛЯТОР ТРАФИКА -->
+    <section>
+      <div class="s-tag"><span>03</span><i></i><span>ПОДБОР ТАРИФА</span></div>
+      <h2 class="s-h2">Сколько трафика вам нужно?</h2>
+      <p class="s-sub">Двигайте ползунки — калькулятор сам плавно рассчитает ваш расход и стоимость.</p>
+
+      <div class="f-card">
+        <div class="c-grp">
+          <div class="c-top"><span>▶️ Видео и стриминг</span><span class="c-val" id="vLbl">2,5 ч в день</span></div>
+          <input type="range" min="0" max="8" step="0.5" value="2.5" id="rVid" oninput="calc()">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <span style="font-size:0.78rem; color:#a1a1aa; font-weight:600;">Качество видео</span>
+            <div class="q-switch">
+              <div class="q-opt active" onclick="setQ(3,this)">Full HD</div>
+              <div class="q-opt" onclick="setQ(6,this)">4K</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="c-grp">
+          <div class="c-top"><span>🌐 Сёрфинг, соцсети, мессенджеры</span><span class="c-val" id="sLbl">5 ч в день</span></div>
+          <input type="range" min="0" max="10" step="0.5" value="5" id="rSurf" oninput="calc()">
+        </div>
+
+        <div class="c-grp" style="margin-bottom:0;">
+          <div class="c-top"><span>👥 Сколько человек пользуется</span><span class="c-val" id="pLbl">1 человек</span></div>
+          <div class="p-grid">
+            <div class="p-opt active" onclick="setP(1,this)">1</div>
+            <div class="p-opt" onclick="setP(2,this)">2</div>
+            <div class="p-opt" onclick="setP(3,this)">3</div>
+            <div class="p-opt" onclick="setP(4,this)">4</div>
+            <div class="p-opt" onclick="setP(5,this)">5</div>
+            <div class="p-opt" onclick="setP(6,this)">6</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="t-card feat" style="margin-bottom:42px;">
+        <div style="font-size:0.7rem; letter-spacing:1.2px; color:#a1a1aa; text-transform:uppercase; font-weight:700;">ПРИМЕРНО В МЕСЯЦ</div>
+        <div style="font-size:2.2rem; font-weight:900; margin:2px 0 6px; color:#ffffff;" id="totGb">≈ 263 ГБ</div>
+        <div class="seg-bar">
+          <div class="seg-v" id="segV" style="width:85%;"></div>
+          <div class="seg-s" id="segS" style="width:15%;"></div>
+        </div>
+        <div style="font-size:0.78rem; color:#a1a1aa; font-weight:600; margin-bottom:14px;" id="totBreak">
+          Видео 225 ГБ · Сёрфинг 38 ГБ
+        </div>
+
+        <div class="ins-box" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <div style="font-size:0.68rem; color:#a1a1aa; text-transform:uppercase; font-weight:700;">ВАМ ПОДОЙДЁТ</div>
+            <div style="font-size:1.15rem; font-weight:800; color:#ffffff;" id="recName">Basic <span style="font-size:0.82rem; color:#a1a1aa; font-weight:500;">300 ГБ</span></div>
+          </div>
+          <div style="font-size:1.45rem; font-weight:900; color:#ffffff;"><span id="recPrNum">80</span> <span style="font-size:0.8rem; color:#a1a1aa; font-weight:500;">₽/мес</span></div>
+        </div>
+
+        <button type="button" class="btn btn-main" id="recBtn" style="margin-bottom:0;" onclick="openSheet('Basic', 80, '1 Месяц')">
+          Выбрать Basic →
+        </button>
+      </div>
+    </section>
+
+    <!-- 04 — ТАРИФЫ (С ПЛАВНЫМ АВТОПОДСЧЕТОМ СТОИМОСТИ) -->
+    <section id="tariffsSection">
+      <div class="s-tag"><span>04</span><i></i><span>ТАРИФЫ</span></div>
+      <h2 class="s-h2">Платите только за трафик</h2>
+      <p class="s-sub">Переключайте период — сайт сам плавно пересчитает стоимость каждого тарифа.</p>
+
+      <div class="p-tabs">
+        <div class="p-tab" onclick="setPer(1,this)">Месяц</div>
+        <div class="p-tab active" onclick="setPer(3,this)">3 месяца <span style="color:#ffffff;">-17%</span></div>
+        <div class="p-tab" onclick="setPer(12,this)">Год <span style="color:#ffffff;">-28%</span></div>
+      </div>
+
+      <div class="calc-status-bar" id="calcStatusBar">
+        <span class="spin-dot"></span> Пересчитываем стоимость со скидкой...
+      </div>
+
+      <div class="t-card" id="cardBasic">
+        <div class="t-head">
+          <div><div style="font-size:1.3rem; font-weight:800; color:#ffffff;">Basic</div><div style="font-size:0.8rem; color:#a1a1aa; font-weight:600;">Сёрфинг и мессенджеры</div></div>
+          <div><div class="t-pr" id="prBWrap"><span id="prB">66</span> ₽<small>/мес</small></div><div style="font-size:0.8rem; color:#a1a1aa; text-align:right; font-weight:600;">300 ГБ в месяц</div></div>
+        </div>
+        <div style="font-size:0.82rem; color:#a1a1aa; font-weight:600; margin-bottom:14px;">
+          Итого к оплате: <b style="color:#fff;"><span id="totB">199</span> ₽</b> <span id="subB">за 3 месяца <b style="color:#ffffff;">-17%</b></span>
+        </div>
+        <button type="button" class="btn btn-main" style="margin-bottom:0; padding:13px;" onclick="buyT('Basic','basic')">Выбрать Basic</button>
+      </div>
+
+      <div class="t-card feat" id="cardPlus">
+        <div class="t-head">
+          <div><div style="font-size:1.3rem; font-weight:800; color:#ffffff;">Plus <span style="font-size:0.68rem; background:#ffffff; color:#000000; padding:2px 8px; border-radius:99px; vertical-align:middle; font-weight:900;">Рекомендуем</span></div><div style="font-size:0.8rem; color:#a1a1aa; font-weight:600;">Стриминг и работа на 2–3 устройствах</div></div>
+          <div><div class="t-pr" id="prPWrap"><span id="prP">150</span> ₽<small>/мес</small></div><div style="font-size:0.8rem; color:#a1a1aa; text-align:right; font-weight:600;">1 ТБ в месяц</div></div>
+        </div>
+        <div style="font-size:0.82rem; color:#a1a1aa; font-weight:600; margin-bottom:14px;">
+          Итого к оплате: <b style="color:#fff;"><span id="totP">449</span> ₽</b> <span id="subP">за 3 месяца <b style="color:#ffffff;">-17%</b></span>
+        </div>
+        <button type="button" class="btn btn-main" style="margin-bottom:0; padding:13px;" onclick="buyT('Plus','plus')">Выбрать Plus</button>
+      </div>
+
+      <div class="t-card" id="cardPremium">
+        <div class="t-head">
+          <div><div style="font-size:1.3rem; font-weight:800; color:#ffffff;">Premium</div><div style="font-size:0.8rem; color:#a1a1aa; font-weight:600;">4K-видео и вся семья</div></div>
+          <div><div class="t-pr" id="prMWrap"><span id="prM">233</span> ₽<small>/мес</small></div><div style="font-size:0.8rem; color:#a1a1aa; text-align:right; font-weight:600;">2 ТБ в месяц</div></div>
+        </div>
+        <div style="font-size:0.82rem; color:#a1a1aa; font-weight:600; margin-bottom:14px;">
+          Итого к оплате: <b style="color:#fff;"><span id="totM">699</span> ₽</b> <span id="subM">за 3 месяца <b style="color:#ffffff;">-17%</b></span>
+        </div>
+        <button type="button" class="btn btn-sec" style="margin-bottom:0; padding:13px;" onclick="buyT('Premium','premium')">Выбрать Premium</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Нижняя панель -->
+  <div class="float-bar">
+    <div class="float-l"><span class="dot-g"></span><span>100 000+ активных<br>пользователей</span></div>
+    <button type="button" class="float-btn" onclick="buyT('Plus','plus')">Подключить →</button>
+  </div>
+
+  <!-- Шторка подтверждения тарифа -->
+  <div class="overlay" id="sheetOv" onclick="if(event.target===this) closeSheet()">
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="sh-top">
+        <div style="font-size:1.35rem; font-weight:800; color: #ffffff;">Подключить</div>
+        <button type="button" class="sh-x" onclick="closeSheet()">✕</button>
+      </div>
+      <div class="plan-box">
+        <div>
+          <div style="font-weight:700; font-size:1rem; color: #ffffff;" id="shTitle">Plus · 3 Месяца</div>
+          <div style="font-size:0.78rem; color:#10b981; font-weight:600;">Автоматическая выдача подписки</div>
+        </div>
+        <div style="font-size:1.65rem; font-weight:800; color: #ffffff;"><b id="shPr">449</b> <span style="font-size:1.1rem; color:#a1a1aa;">₽</span></div>
+      </div>
+      <div style="font-size:0.72rem; letter-spacing:1px; color:#a1a1aa; text-transform:uppercase; margin-bottom:8px; font-weight:700;">СПОСОБ ОПЛАТЫ</div>
+      <div class="pay-card">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:1.3rem;">💳</div>
+          <div>
+            <div style="font-weight:700; font-size:0.95rem; color: #ffffff;">Оплата банковской картой</div>
+            <div style="font-size:0.74rem; color:#a1a1aa;">МИР, Visa, Mastercard</div>
+          </div>
+        </div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#ffffff; color:#000000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:11px;">✓</div>
+      </div>
+      <button type="button" class="btn btn-main" style="margin-bottom:0;" onclick="openCardCheckout()">
+        Оплатить картой · <span id="shBtnPr">449</span> ₽ →
+      </button>
+    </div>
+  </div>
+
+  <!-- Страница ввода данных банковской карты -->
+  <div class="checkout-page" id="checkoutPage">
+    <div class="chk-wrap">
+      <button type="button" class="chk-back" onclick="closeCardCheckout()">‹ Вернуться на сайт</button>
+
+      <div class="chk-box">
+        <div class="chk-header">
+          <div>
+            <div style="font-size:0.78rem; color:#6b7280; font-weight:600;">Оплата подписки Lumi VPN</div>
+            <div style="font-weight:800; font-size:1.02rem; color:#111827;" id="chkPlanTitle">Plus · 3 Месяца</div>
+          </div>
+          <div class="chk-sum" id="chkSumText">449,00 ₽</div>
+        </div>
+
+        <div class="visual-card">
+          <div class="vc-top">
+            <div class="vc-chip"></div>
+            <div class="vc-brand" id="vcBrand">МИР</div>
+          </div>
+          <div class="vc-num" id="vcNumberPreview">2202 2084 •••• 7277</div>
+          <div class="vc-bottom">
+            <span>LUMI VPN SECURE</span>
+            <span id="vcExpPreview">09/29</span>
+          </div>
+        </div>
+
+        <div class="f-group">
+          <label>Номер банковской карты</label>
+          <input type="text" class="f-input" id="inpCardNum" maxlength="19" inputmode="numeric" placeholder="0000 0000 0000 0000" value="2202 2084 5109 7277" oninput="onCardNumInput(this)">
+        </div>
+
+        <div class="f-row">
+          <div class="f-group">
+            <label>Срок действия</label>
+            <input type="text" class="f-input" id="inpCardExp" maxlength="5" inputmode="numeric" placeholder="ММ/ГГ" value="09/29" oninput="onCardExpInput(this)">
+          </div>
+          <div class="f-group">
+            <label>Код CVC/CVV</label>
+            <input type="password" class="f-input" id="inpCardCvc" maxlength="3" inputmode="numeric" placeholder="•••" value="742" oninput="this.value=this.value.replace(/\D/g,'')">
+          </div>
+        </div>
+
+        <div class="err-msg" id="cardErrMsg">Пожалуйста, введите 16 цифр карты, срок ММ/ГГ и 3 цифры CVC.</div>
+
+        <button type="button" class="pay-submit-btn" id="paySubmitBtn" onclick="submitCardPayment()">
+          <span id="payBtnText">Оплатить 449,00 ₽</span>
+        </button>
+
+        <div style="text-align:center; font-size:0.76rem; color:#6b7280; margin-top:14px;">
+          🔒 Безопасная оплата · Сразу после оплаты откроется ваша подписка и инструкция для Incy
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // ТОПОГРАФИЯ (ЧЕРНО-БЕЛЫЙ СТИЛЬ)
+    // =========================================================================
+    (function initTopography() {
+      const config = {
+        color: [255, 255, 255], // Чистый белый
+        lineCount: 22,
+        lineWidth: 1,
+        elevation: 1,
+        foreground: 0.2,
+        tilt: 32,
+        speed: 0.25,
+        direction: 1,
+        glow: 0.2,
+        fog: 0.35,
+        hoverEffect: "lift",
+        clickEffect: "pulse",
+        brightness: 1.2
+      };
+
+      const stage = document.getElementById('topoStage');
+      const canvas = document.getElementById('topographyCanvas');
+      const ctx = canvas.getContext('2d');
+      let W = 480, H = 600, dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      function resize() {
+        const rect = stage.getBoundingClientRect();
+        W = rect.width || 480;
+        H = rect.height || 600;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      let phase = 0;
+      const pointer = { x: -9999, y: -9999, active: false };
+      const pulses = [];
+
+      stage.addEventListener('pointermove', function(e) {
+        const r = stage.getBoundingClientRect();
+        pointer.x = e.clientX - r.left;
+        pointer.y = e.clientY - r.top;
+        pointer.active = true;
+      });
+      stage.addEventListener('pointerleave', function() {
+        pointer.active = false;
+      });
+      stage.addEventListener('pointerdown', function(e) {
+        const r = stage.getBoundingClientRect();
+        pulses.push({
+          x: e.clientX - r.left,
+          y: e.clientY - r.top,
+          radius: 0,
+          strength: 1.0
+        });
+      });
+
+      function terrainNoise(x, z) {
+        return (
+          Math.sin(x * 0.011 + z * 0.17) * 28 +
+          Math.cos(x * 0.023 - z * 0.12) * 18 +
+          Math.sin((x * 0.007 + z * 0.09) * 1.6) * 22
+        ) * config.elevation;
+      }
+
+      const tiltFactor = Math.sin((config.tilt * Math.PI) / 180);
+
+      function renderTopo() {
+        ctx.clearRect(0, 0, W, H);
+        phase += 0.03 * config.speed * config.direction;
+
+        for (let p = pulses.length - 1; p >= 0; p--) {
+          pulses[p].radius += 6.5;
+          pulses[p].strength *= 0.96;
+          if (pulses[p].strength < 0.03) pulses.splice(p, 1);
+        }
+
+        const rCol = 255, gCol = 255, bCol = 255;
+        const topHorizon = H * 0.22;
+        const bottomSpan = H * (0.78 + config.foreground * 0.25);
+        const cols = 64;
+
+        ctx.lineWidth = config.lineWidth;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+        ctx.shadowBlur = config.glow * 45;
+
+        for (let i = 0; i < config.lineCount; i++) {
+          const depthRatio = i / (config.lineCount - 1);
+          const persp = Math.pow(depthRatio, 1 + tiltFactor * 0.65);
+          const baseY = topHorizon + persp * bottomSpan;
+
+          const fogAlpha = Math.max(0.08, (1 - (1 - depthRatio) * config.fog * 1.9) * 0.72);
+          ctx.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, ${fogAlpha.toFixed(3)})`;
+
+          ctx.beginPath();
+          for (let c = 0; c <= cols; c++) {
+            const px = (c / cols) * W;
+            const zCoord = i * 0.65 - phase;
+            let elev = terrainNoise(px, zCoord) * (0.35 + persp * 0.85);
+
+            if (pointer.active && config.hoverEffect === "lift") {
+              const dx = px - pointer.x;
+              const dy = baseY - pointer.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < 140) {
+                const lift = Math.pow(1 - dist / 140, 2) * 38;
+                elev += lift;
+              }
+            }
+
+            if (config.clickEffect === "pulse") {
+              for (let p = 0; p < pulses.length; p++) {
+                const pl = pulses[p];
+                const dx = px - pl.x;
+                const dy = baseY - pl.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const wave = Math.exp(-Math.pow(dist - pl.radius, 2) / 1400);
+                elev += Math.cos((dist - pl.radius) * 0.12) * wave * 34 * pl.strength;
+              }
+            }
+
+            const py = baseY - elev;
+            if (c === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+
+        requestAnimationFrame(renderTopo);
+      }
+      renderTopo();
+    })();
+
+    function scrollToTariffs() {
+      var el = document.getElementById('tariffsSection');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    var activeTimers = {};
+    function animateValue(elId, endVal, duration) {
+      var el = document.getElementById(elId);
+      if (!el) return;
+      var startVal = parseInt(el.textContent.replace(/\D/g, ''), 10) || 0;
+      if (startVal === endVal) return;
+      if (activeTimers[elId]) cancelAnimationFrame(activeTimers[elId]);
+
+      var startTime = performance.now();
+      function step(now) {
+        var progress = Math.min((now - startTime) / duration, 1);
+        var ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(startVal + (endVal - startVal) * ease);
+        if (progress < 1) {
+          activeTimers[elId] = requestAnimationFrame(step);
+        } else {
+          el.textContent = endVal;
+        }
+      }
+      activeTimers[elId] = requestAnimationFrame(step);
+    }
+
+    function setHeroLoc(fl, city, crd, el) {
+      document.getElementById('heroFl').className = 'fl ' + fl;
+      document.getElementById('heroCity').textContent = city;
+      document.getElementById('heroCrd').textContent = crd;
+      document.querySelectorAll('.c-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function toggleTspu() {
+      var sw = document.getElementById('tSw');
+      var pkt = document.getElementById('pktBadge');
+      sw.classList.toggle('on');
+      var on = sw.classList.contains('on');
+      document.getElementById('tTitle').textContent = on ? 'Включён' : 'Выключен';
+      pkt.className = on ? 'pkt-badge' : 'pkt-badge blocked';
+      pkt.textContent = on ? '🔒 f24d·4ddb·1095·20' : '✕ youtube.com';
+      document.getElementById('ispSt').style.color = on ? 'var(--green)' : 'var(--red)';
+      document.getElementById('ispSt').textContent = on ? '● Только шифр — блокировать нечего' : '● Видят ваши сайты и блокируют доступ';
+      document.getElementById('siteSt').style.color = on ? 'var(--green)' : 'var(--red)';
+      document.getElementById('siteSt').textContent = on ? '● Адрес сервера Lumi, а не ваш' : '● Запрос заблокирован ТСПУ';
+      document.getElementById('siteIp').textContent = on ? '198.51.100.7 · Швеция №5' : 'Соединение сброшено';
+    }
+
+    let qRate = 3, pCnt = 1;
+    function setQ(r, el) { qRate = r; document.querySelectorAll('.q-opt').forEach(o => o.classList.remove('active')); el.classList.add('active'); calc(); }
+    function setP(n, el) {
+      pCnt = n; document.querySelectorAll('.p-opt').forEach(o => o.classList.remove('active')); el.classList.add('active');
+      document.getElementById('pLbl').textContent = n + (n === 1 ? ' человек' : (n < 5 ? ' человека' : ' человек'));
+      calc();
+    }
+    function calc() {
+      const v = parseFloat(document.getElementById('rVid').value);
+      const s = parseFloat(document.getElementById('rSurf').value);
+      document.getElementById('vLbl').textContent = v.toString().replace('.', ',') + ' ч в день';
+      document.getElementById('sLbl').textContent = s.toString().replace('.', ',') + ' ч в день';
+      const vGb = Math.round(v * qRate * 30 * pCnt), sGb = Math.round(s * 0.25 * 30 * pCnt);
+      const sumGb = vGb + sGb;
+      const tot = Math.max(1, sumGb);
+      document.getElementById('totGb').textContent = '≈ ' + sumGb + ' ГБ';
+      document.getElementById('segV').style.width = Math.round(vGb / tot * 100) + '%';
+      document.getElementById('segS').style.width = Math.round(sGb / tot * 100) + '%';
+      document.getElementById('totBreak').textContent = 'Видео ' + vGb + ' ГБ · Сёрфинг ' + sGb + ' ГБ';
+
+      const nm = document.getElementById('recName'), btn = document.getElementById('recBtn');
+      if (sumGb <= 300) {
+        nm.innerHTML = 'Basic <span style="font-size:0.82rem; color:#a1a1aa; font-weight:500;">300 ГБ</span>';
+        animateValue('recPrNum', 80, 350);
+        btn.textContent = 'Выбрать Basic →'; btn.onclick = function() { openSheet('Basic', 80, '1 Месяц'); };
+      } else if (sumGb <= 1000) {
+        nm.innerHTML = 'Plus <span style="font-size:0.82rem; color:#a1a1aa; font-weight:500;">1 ТБ</span>';
+        animateValue('recPrNum', 180, 350);
+        btn.textContent = 'Выбрать Plus →'; btn.onclick = function() { openSheet('Plus', 180, '1 Месяц'); };
+      } else {
+        nm.innerHTML = 'Premium <span style="font-size:0.82rem; color:#a1a1aa; font-weight:500;">2 ТБ</span>';
+        animateValue('recPrNum', 280, 350);
+        btn.textContent = 'Выбрать Premium →'; btn.onclick = function() { openSheet('Premium', 280, '1 Месяц'); };
+      }
+    }
+
+    var curPer = 3, curPrice = 449, curTitle = 'Plus · 3 Месяца';
+    var tData = {
+      1: {
+        basic: [80, 80, 'за 1 месяц', '1 Месяц'],
+        plus: [180, 180, 'за 1 месяц', '1 Месяц'],
+        premium: [280, 280, 'за 1 месяц', '1 Месяц']
+      },
+      3: {
+        basic: [66, 199, 'за 3 месяца <b style="color:#ffffff;">-17%</b>', '3 Месяца'],
+        plus: [150, 449, 'за 3 месяца <b style="color:#ffffff;">-17%</b>', '3 Месяца'],
+        premium: [233, 699, 'за 3 месяца <b style="color:#ffffff;">-17%</b>', '3 Месяца']
+      },
+      12: {
+        basic: [58, 690, 'за год <b style="color:#ffffff;">-28%</b>', '1 Год'],
+        plus: [129, 1550, 'за год <b style="color:#ffffff;">-28%</b>', '1 Год'],
+        premium: [199, 2390, 'за год <b style="color:#ffffff;">-28%</b>', '1 Год']
+      }
+    };
+
+    function setPer(m, el) {
+      curPer = m;
+      var tabs = document.querySelectorAll('.p-tab');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+      el.classList.add('active');
+
+      var status = document.getElementById('calcStatusBar');
+      status.classList.add('computing');
+
+      var d = tData[m];
+      animateValue('prB', d.basic[0], 480);
+      animateValue('totB', d.basic[1], 480);
+      document.getElementById('subB').innerHTML = d.basic[2];
+
+      animateValue('prP', d.plus[0], 480);
+      animateValue('totP', d.plus[1], 480);
+      document.getElementById('subP').innerHTML = d.plus[2];
+
+      animateValue('prM', d.premium[0], 480);
+      animateValue('totM', d.premium[1], 480);
+      document.getElementById('subM').innerHTML = d.premium[2];
+
+      setTimeout(function() {
+        status.classList.remove('computing');
+      }, 500);
+    }
+
+    function buyT(name, key) {
+      var item = tData[curPer][key];
+      openSheet(name, item[1], item[3]);
+    }
+
+    function openSheet(name, pr, per) {
+      curPrice = pr;
+      curTitle = name + ' · ' + per;
+      document.getElementById('shTitle').textContent = curTitle;
+      document.getElementById('shPr').textContent = pr;
+      document.getElementById('shBtnPr').textContent = pr;
+      document.getElementById('sheetOv').classList.add('open');
+    }
+    function closeSheet() { document.getElementById('sheetOv').classList.remove('open'); }
+
+    function openCardCheckout() {
+      closeSheet();
+      document.getElementById('chkPlanTitle').textContent = curTitle;
+      document.getElementById('chkSumText').textContent = curPrice + ',00 ₽';
+      document.getElementById('payBtnText').textContent = 'Оплатить ' + curPrice + ',00 ₽';
+      document.getElementById('cardErrMsg').style.display = 'none';
+      document.getElementById('checkoutPage').classList.add('open');
+    }
+    function closeCardCheckout() {
+      document.getElementById('checkoutPage').classList.remove('open');
+    }
+
+    function onCardNumInput(inp) {
+      var digits = inp.value.replace(/\D/g, '').substring(0, 16);
+      var formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+      inp.value = formatted;
+      document.getElementById('vcNumberPreview').textContent = formatted || '•••• •••• •••• ••••';
+    }
+
+    function onCardExpInput(inp) {
+      var digits = inp.value.replace(/\D/g, '').substring(0, 4);
+      inp.value = digits.length >= 3 ? digits.substring(0, 2) + '/' + digits.substring(2, 4) : digits;
+      document.getElementById('vcExpPreview').textContent = inp.value || 'ММ/ГГ';
+    }
+
+    function submitCardPayment() {
+      var btn = document.getElementById('paySubmitBtn');
+      var btnTxt = document.getElementById('payBtnText');
+      btn.disabled = true;
+      btnTxt.textContent = 'Обработка платежа в банке...';
+
+      setTimeout(function() {
+        btn.disabled = false;
+        closeCardCheckout();
+        issueSubscriptionAndGuide();
+      }, 1200);
+    }
+
+    function issueSubscriptionAndGuide() {
+      var key = "vless://32e5e348-52bd-4b5e-a46c-ebf1c21780d5@egeklass.online:443?encryption=none&security=tls&sni=egeklass.online&fp=safari&type=ws&host=egeklass.online&path=%2Fapi%2Fv2%2Fsession%2Fg4trR4a1-TyA#LumiVPN-Sweden5";
+      document.getElementById('activePlanBadge').textContent = curTitle;
+      document.getElementById('vlessStr').value = key;
+      var box = document.getElementById('subSuccessBox');
+      box.style.display = 'block';
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function safeCopy(str, msg) {
+      var t = document.getElementById('toast');
+      var showMsg = function() { t.textContent = msg; t.classList.add('show'); setTimeout(function() { t.classList.remove('show'); }, 2500); };
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = str;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showMsg();
+      } catch (err) {
+        showMsg();
+      }
+    }
+
+    function copyVless() { safeCopy(document.getElementById('vlessStr').value, '✓ Подписка скопирована! Вставьте в Incy'); }
+    function copyJson() { safeCopy('{"remarks":"LumiVPN-Sweden5"}', '✓ JSON-конфиг для Incy скопирован!'); }
+  </script>
+</body>
+</html>
